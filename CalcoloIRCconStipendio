@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CORREZIONE v7: Aggiornato titolo -->
+    <title>Analisi Carriera Docenti Religione (v7 - Correzione N05)</title>
+    <!-- Caricamento di Tailwind CSS per lo stile -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Stile personalizzato per l'aspetto dell'app */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .table-header {
+            @apply px-4 py-2 bg-gray-200 text-left text-sm font-semibold text-gray-700;
+        }
+        .table-cell {
+            @apply px-4 py-2 border-t border-gray-200 text-sm text-gray-800;
+        }
+        .input-field {
+            @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm;
+        }
+        .label-text {
+            @apply block text-sm font-medium text-gray-700;
+        }
+        .btn {
+            @apply inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2;
+        }
+        .btn-primary {
+            @apply bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500;
+        }
+        .btn-secondary {
+            @apply bg-gray-600 hover:bg-gray-700 focus:ring-gray-500;
+        }
+        .btn-red {
+            @apply bg-red-500 hover:bg-red-600 text-xs px-2 py-1;
+        }
+        /* Stili per il report stipendio */
+        .stipendio-voce {
+            @apply flex justify-between items-center py-2 border-b;
+        }
+        .stipendio-label {
+            @apply text-sm font-medium text-gray-600;
+        }
+        .stipendio-valore {
+            @apply text-sm font-semibold text-gray-900;
+        }
+        .stipendio-totale {
+            @apply flex justify-between items-center py-3 mt-2;
+        }
+        .stipendio-label-totale {
+            @apply text-base font-bold text-indigo-700;
+        }
+        .stipendio-valore-totale {
+            @apply text-xl font-bold text-indigo-700;
+        }
+        /* Stili per lo storico eventi (v5) */
+        .evento-card {
+            @apply bg-white p-4 rounded-lg shadow border border-gray-200;
+        }
+        .evento-header {
+            @apply flex justify-between items-center mb-2;
+        }
+        .evento-titolo {
+            @apply text-base font-semibold text-indigo-700;
+        }
+        .evento-decorrenza {
+            @apply text-sm font-bold text-gray-700;
+        }
+        .evento-dettaglio {
+            @apply text-xs text-gray-600 space-y-1;
+        }
+        .evento-dettaglio span {
+            @apply font-medium text-gray-800;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto p-4 sm:p-8 max-w-5xl">
+        <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
+
+            <h1 class="text-2xl sm:text-3xl font-bold text-center text-indigo-800 mb-6">
+                Calcolatore Carriera e Retribuzione IdR (v7)
+            </h1>
+
+            <!-- SEZIONE 1: STATO GIURIDICO -->
+            <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="label-text mb-2">1. Stato Giuridico Docente:</label>
+                    <div class="flex items-center space-x-6">
+                        <div class="flex items-center">
+                            <input id="stato-ruolo" name="stato_giuridico" type="radio" value="ruolo" class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                            <label for="stato-ruolo" class="ml-2 block text-sm text-gray-900">Di Ruolo</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="stato-incaricato" name="stato_giuridico" type="radio" value="incaricato" checked class="h-4 w-4 text-indigo-600 border-gray-300 focus:ring-indigo-500">
+                            <label for="stato-incaricato" class="ml-2 block text-sm text-gray-900">Incaricato Annuale</label>
+                        </div>
+                    </div>
+                </div>
+                <!-- Selezione Titolo/Grado per Stipendio -->
+                <div>
+                    <label for="titolo-grado" class="label-text">2. Livello Inquadramento (per calcolo stipendio):</label>
+                    <select id="titolo-grado" class="input-field" required>
+                        <option value="Infanzia/Primaria">Docente Infanzia / Primaria</option>
+                        <option value="Secondaria I Grado">Docente Secondaria I Grado</option>
+                        <option value="Secondaria II Grado">Docente Secondaria II Grado (Laureato)</option>
+                        <option value="ITP">Docente ITP (Secondaria II Grado)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SEZIONE 2: AREA DI LAVORO (visibilità condizionale) -->
+            
+            <!-- Pannello Docenti DI RUOLO -->
+            <div id="pannello-ruolo" class="hidden bg-indigo-50 p-6 rounded-lg border border-indigo-200">
+                <h2 class="text-xl font-semibold text-indigo-700 mb-3">Docente di Ruolo</h2>
+                <p class="text-gray-700 mb-4">
+                    Il docente di ruolo ha diritto alla <strong>Ricostruzione di Carriera</strong> standard dopo il superamento dell'anno di prova. Inserisci i dati qui sotto per calcolare la stima stipendiale.
+                </p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="data-immissione-ruolo" class="label-text">Immissione in ruolo:</label>
+                        <select id="data-immissione-ruolo" class="input-field">
+                            <option value="post-2023">dall'A.S. 2023/2024</option>
+                            <option value="pre-2023">prima del 1/9/2023</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="anni-preruolo" class="label-text">Anni pre-ruolo validi:</label>
+                        <input type="number" id="anni-preruolo" value="0" min="0" class="input-field">
+                    </div>
+                </div>
+                <button id="calcola-ruolo" class="btn btn-primary mt-4">Calcola Diritto e Stipendio (Ruolo)</button>
+            </div>
+
+            <!-- Pannello Docenti INCARICATI ANNUALI -->
+            <div id="pannello-incaricato">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">3. Inserisci Servizi (Incaricati Annuali)</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    Se un docente ha prestato servizio su più gradi nello stesso A.S. (es. 6 ore Primaria + 6 ore Secondaria), <strong>inseriscili come due servizi separati selezionando lo stesso Anno Scolastico</strong>. L'app li sommerà automaticamente.
+                </p>
+                <form id="form-servizio" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 border rounded-lg bg-gray-50">
+                    
+                    <div>
+                        <label for="as-start" class="label-text">Anno Scolastico (Inizio)</label>
+                        <select id="as-start" class="input-field" required>
+                            <!-- Popolato da JS -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="tipo-servizio" class="label-text">Tipo Servizio</label>
+                        <select id="tipo-servizio" class="input-field" required>
+                            <option value="Incarico Annuale">Incarico Annuale</option>
+                            <option value="Supplenza Breve">Supplenza Breve/Temporanea</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="giorni" class="label-text">Giorni di Servizio</label>
+                        <input type="number" id="giorni" value="180" min="0" class="input-field" required>
+                    </div>
+
+                    <div>
+                        <label for="ordine-scuola" class="label-text">Ordine Scuola</label>
+                        <select id="ordine-scuola" class="input-field" required>
+                            <option value="Infanzia">Infanzia</option>
+                            <option value="Primaria">Primaria</option>
+                            <option value="Secondaria">Secondaria (I e II Grado)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="ore" class="label-text">Ore Settimanali</label>
+                        <input type="number" id="ore" value="18" step="0.5" min="0" class="input-field" required>
+                    </div>
+
+                    <div class="flex items-end space-x-4 col-span-1 sm:col-span-2 lg:col-span-1">
+                         <div class="flex-1">
+                            <label class="label-text invisible">Opzioni</label>
+                            <div class="mt-1 flex items-center space-x-4">
+                                <div class="flex items-center">
+                                    <input id="titoli-ok" type="checkbox" checked class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                    <label for="titoli-ok" class="ml-2 text-sm text-gray-700">Titoli Idonei</label>
+                                </div>
+                                <div id="container-ragioni-strutturali" class="hidden flex items-center">
+                                    <input id="ragioni-strutturali" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                    <label for="ragioni-strutturali" class="ml-2 text-sm text-gray-700">Ragioni Strutturali</label>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary h-10">Aggiungi</button>
+                    </div>
+                </form>
+
+                <!-- Tabella Servizi Inseriti -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Riepilogo Servizi Inseriti</h3>
+                    <div class="overflow-x-auto shadow rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="table-header">A.S.</th>
+                                    <th class="table-header">Servizio</th>
+                                    <th class="table-header">Giorni</th>
+                                    <th class="table-header">Scuola</th>
+                                    <th class="table-header">Ore</th>
+                                    <th class="table-header">Valido x Anzianità?</th>
+                                    <th class="table-header">Azione</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabella-corpo" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="7" class="table-cell text-center text-gray-500">Nessun servizio inserito.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pulsante Calcolo Finale -->
+                <div class="mt-6 text-center">
+                    <button id="calcola-incaricato" class="btn btn-primary w-full sm:w-auto text-lg py-3 px-8">
+                        Analizza Carriera e Stipendio (Incaricato)
+                    </button>
+                </div>
+            </div>
+            
+            <!-- SEZIONE 3: RISULTATO ANALISI -->
+            <div id="risultato-container" class="hidden mt-8 pt-6 border-t border-gray-300">
+                <h2 class="text-2xl font-bold text-center text-indigo-800 mb-4">Esito dell'Analisi</h2>
+                <div class="bg-gray-50 p-6 rounded-lg shadow-inner">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        <!-- Colonna Sinistra: Decreto -->
+                        <div class="bg-white p-5 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Decreto da Predisporre:</h3>
+                            <p id="decreto-necessario" class="text-xl font-bold text-gray-700"></p>
+                            <p id="diritto-spettante" class="text-base font-semibold text-indigo-600 mt-1"></p>
+                        </div>
+
+                        <!-- Colonna Destra: Calcolo Stipendio FINALE -->
+                        <div class="bg-white p-5 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Stima Retribuzione FINALE</h3>
+                            <div id="stipendio-dettaglio">
+                                <!-- Voci inserite da JS -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- v5: Storico Eventi per Decreto -->
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Storico Eventi per Decreto</h3>
+                        <div id="storico-retributivo" class="space-y-4 max-h-96 overflow-y-auto bg-white p-4 rounded-lg shadow-inner">
+                            <!-- Schede evento inserite da JS -->
+                            <p class="text-gray-500 text-center">Nessun evento retributivo rilevante ancora maturato.</p>
+                        </div>
+                    </div>
+
+                    <!-- Note Aggiuntive -->
+                    <div class="mt-6 bg-white p-4 rounded-lg shadow">
+                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Note sul Calcolo</h3>
+                        <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+                            <li id="nota-calcolo"></li>
+                            <!-- v6 -->
+                            <li>L'<strong>Assegno ad Personam</strong> viene calcolato automaticamente se lo stipendio N05 è inferiore al N27 precedente, e viene riassorbito al primo scatto di fascia utile.</li>
+                            <li>L'<strong>Elemento Perequativo</strong> e l'<strong>Indennità Integrativa Speciale (IIS)</strong> sono già assorbiti nello Stipendio Tabellare (CCNL 2019-2021).</li>
+                            <li>L'<strong>IVC (Indennità Vacanza Contrattuale)</strong> è una stima (0.5% tabellare) in attesa del CCNL 2022-2024 e sarà riassorbita.</li>
+                            <li>Il calcolo si basa sulle tabelle stipendiali e RPD del CCNL 2019-2021 (in vigore). Non include aumenti da CCNL storici.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Dettaglio Anno per Anno (Log di Analisi) -->
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Log di Analisi (Anno per Anno):</h3>
+                        <div id="dettaglio-periodi" class="text-sm text-gray-700 bg-white p-4 rounded-lg shadow space-y-2 max-h-60 overflow-y-auto font-mono">
+                            <!-- Log inserito da JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- Chiusura card bianca principale -->
+    </div> <!-- Chiusura container -->
+
+    <script>
+        // --- DATABASE STIPENDI (CCNL 2019-2021, con EP assorbito) ---
+        // Fonte: Gazzetta Ufficiale / Tabelle Sindacali (valori annui lordi)
+        
+        // Stipendi Tabellari Annui (comprensivi di IIS e Elemento Perequativo)
+        const STIPENDI_TABELLARI_ANNUI = {
+            'Infanzia/Primaria': {
+                '0-8': 21099.04,
+                '9-14': 23182.99,
+                '15-20': 25056.23,
+                '21-27': 26922.84,
+                '28-34': 28628.28,
+                '35+': 29930.50
+            },
+            'ITP': { // Docenti ITP (Diplomati Secondaria II Grado)
+                '0-8': 21099.04, // Come Infanzia/Primaria
+                '9-14': 23182.99,
+                '15-20': 25056.23,
+                '21-27': 26922.84,
+                '28-34': 28628.28,
+                '35+': 29930.50
+            },
+            'Secondaria I Grado': { // Docenti Sec I Grado (spesso equiparati a Laureati Sec II)
+                '0-8': 22678.52,
+                '9-14': 25342.05,
+                '15-20': 27676.59,
+                '21-27': 29948.17,
+                '28-34': 31952.17,
+                '35+': 33621.27
+            },
+            'Secondaria II Grado': { // Docenti Laureati Secondaria II Grado
+                '0-8': 22678.52,
+                '9-14': 25995.81,
+                '15-20': 28520.99,
+                '21-27': 31736.25,
+                '28-34': 34101.44,
+                '35+': 35505.47
+            }
+        };
+
+        // RPD (Retribuzione Professionale Docenti) Annua
+        // Fonte: Tabella E1.2 CCNL 2019-21 (valori mensili * 12)
+        const RPD_ANNUALE = {
+            '0-14': 2337.60, // 194.80 * 12
+            '15-27': 2874.00, // 239.50 * 12
+            '28+': 3651.60   // 304.30 * 12
+        };
+
+        // --- FINE DATABASE STIPENDI ---
+
+        let elencoServizi = [];
+        let eventiRetributivi = []; // v5: Array per lo storico
+
+        // Elementi del DOM
+        const statoRuolo = document.getElementById('stato-ruolo');
+        const statoIncaricato = document.getElementById('stato-incaricato');
+        const pannelloRuolo = document.getElementById('pannello-ruolo');
+        const pannelloIncaricato = document.getElementById('pannello-incaricato');
+        const formServizio = document.getElementById('form-servizio');
+        const tabellaCorpo = document.getElementById('tabella-corpo');
+        const ordineScuolaSelect = document.getElementById('ordine-scuola');
+        const containerRagioniStrutturali = document.getElementById('container-ragioni-strutturali');
+        const oreInput = document.getElementById('ore');
+        const asStartSelect = document.getElementById('as-start');
+        const calcolaRuoloBtn = document.getElementById('calcola-ruolo');
+        const calcolaIncaricatoBtn = document.getElementById('calcola-incaricato');
+        const risultatoContainer = document.getElementById('risultato-container');
+        const dirittoSpettante = document.getElementById('diritto-spettante');
+        const decretoNecessario = document.getElementById('decreto-necessario');
+        const dettaglioPeriodi = document.getElementById('dettaglio-periodi');
+        const dataImmissioneRuoloSelect = document.getElementById('data-immissione-ruolo');
+        const titoloGradoSelect = document.getElementById('titolo-grado');
+        const stipendioDettaglio = document.getElementById('stipendio-dettaglio');
+        const notaCalcolo = document.getElementById('nota-calcolo');
+        const anniPreruoloInput = document.getElementById('anni-preruolo');
+        const storicoRetributivoContainer = document.getElementById('storico-retributivo'); // v5
+
+        // --- GESTIONE INTERFACCIA (UI) ---
+
+        function popolaAnni() {
+            const annoCorrente = new Date().getFullYear();
+            const annoInizio = 1990;
+            for (let i = annoCorrente; i >= annoInizio; i--) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i}/${i + 1}`;
+                asStartSelect.appendChild(option);
+            }
+        }
+
+        statoRuolo.addEventListener('change', aggiornaPannelli);
+        statoIncaricato.addEventListener('change', aggiornaPannelli);
+
+        function aggiornaPannelli() {
+            if (statoRuolo.checked) {
+                pannelloRuolo.classList.remove('hidden');
+                pannelloIncaricato.classList.add('hidden');
+            } else {
+                pannelloRuolo.classList.add('hidden');
+                pannelloIncaricato.classList.remove('hidden');
+            }
+            risultatoContainer.classList.add('hidden'); 
+        }
+
+        ordineScuolaSelect.addEventListener('change', aggiornaRagioniStrutturali);
+        oreInput.addEventListener('input', aggiornaRagioniStrutturali);
+
+        function aggiornaRagioniStrutturali() {
+            const ore = parseFloat(oreInput.value) || 0;
+            if (ordineScuolaSelect.value === 'Secondaria' && ore < 18 && ore >= 12) {
+                containerRagioniStrutturali.classList.remove('hidden');
+            } else {
+                containerRagioniStrutturali.classList.add('hidden');
+                document.getElementById('ragioni-strutturali').checked = false;
+            }
+        }
+        
+        formServizio.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const asStart = asStartSelect.value;
+            const as = `${asStart}/${parseInt(asStart, 10) + 1}`;
+
+            const servizio = {
+                id: Date.now(),
+                as: as,
+                asStart: parseInt(asStart, 10), // v5: per decorrenza
+                tipoServizio: document.getElementById('tipo-servizio').value,
+                giorni: parseInt(document.getElementById('giorni').value, 10),
+                titoliOK: document.getElementById('titoli-ok').checked,
+                ordineScuola: document.getElementById('ordine-scuola').value,
+                ore: parseFloat(document.getElementById('ore').value),
+                ragioniStrutturali: document.getElementById('ragioni-strutturali').checked
+            };
+
+            elencoServizi.push(servizio);
+            elencoServizi.sort((a, b) => a.as.localeCompare(b.as)); 
+            
+            renderTabella();
+            formServizio.reset();
+            aggiornaRagioniStrutturali(); 
+            asStartSelect.focus();
+        });
+
+        function renderTabella() {
+            if (elencoServizi.length === 0) {
+                tabellaCorpo.innerHTML = '<tr><td colspan="7" class="table-cell text-center text-gray-500">Nessun servizio inserito.</td></tr>';
+                return;
+            }
+
+            tabellaCorpo.innerHTML = ''; 
+            elencoServizi.forEach(servizio => {
+                const valido = isServizioValido(servizio);
+                const riga = document.createElement('tr');
+                riga.innerHTML = `
+                    <td class="table-cell font-medium">${servizio.as}</td>
+                    <td class="table-cell">${servizio.tipoServizio}</td>
+                    <td class="table-cell">${servizio.giorni}</td>
+                    <td class="table-cell">${servizio.ordineScuola}</td>
+                    <td class="table-cell">${servizio.ore} ${servizio.ragioniStrutturali ? '<span class="text-xs text-indigo-600">(RS)</span>' : ''}</td>
+                    <td class="table-cell">
+                        ${valido ? '<span class="text-green-600 font-semibold">Sì</span>' : '<span class="text-red-600 font-semibold">No</span>'}
+                    </td>
+                    <td class="table-cell">
+                        <button class="btn btn-red" onclick="rimuoviServizio(${servizio.id})">X</button>
+                    </td>
+                `;
+                tabellaCorpo.appendChild(riga);
+            });
+        }
+
+        window.rimuoviServizio = (id) => {
+            elencoServizi = elencoServizi.filter(s => s.id !== id);
+            renderTabella();
+        }
+
+        // --- GESTIONE LOGICA DI CALCOLO ---
+
+        function isServizioValido(servizio) {
+            return servizio.tipoServizio === 'Incarico Annuale' && 
+                   servizio.titoliOK;
+        }
+
+        function isAnnoValidoPerProgressione(annoAggregato) {
+            return annoAggregato.isAnnoValido && annoAggregato.totaleGiorni >= 180;
+        }
+
+        function checkRequisitoOreAggregato(annoAggregato) {
+            const ore = annoAggregato.totaleOre;
+            if (annoAggregato.ordini.includes('Primaria') && ore >= 12) return true;
+            if (annoAggregato.ordini.includes('Infanzia') && ore >= 12.5) return true;
+            if (annoAggregato.ordini.includes('Secondaria')) {
+                if (ore >= 18) return true;
+                if (ore >= 12 && annoAggregato.ragioniStrutturali) return true;
+            }
+            return false;
+        }
+
+        function getFasciaStipendiale(anni) {
+            if (anni < 9) return '0-8';
+            if (anni < 15) return '9-14';
+            if (anni < 21) return '15-20';
+            if (anni < 28) return '21-27';
+            if (anni < 35) return '28-34';
+            return '35+';
+        }
+
+        function getFasciaRPD(anni) {
+            if (anni < 15) return '0-14';
+            if (anni < 28) return '15-27';
+            return '28+';
+        }
+
+        function formatCurrency(value) {
+            if (typeof value !== 'number') value = 0;
+            return `€ ${value.toFixed(2).replace('.', ',')}`;
+        }
+
+        // Calcolatore Stipendio unificato (v6)
+        function _calcolaStipendio(statoDocente, anniValidi, titoloGrado, numBienniOverride = null, ultimoLordoConosciuto = 0) {
+            const tabelleGrado = STIPENDI_TABELLARI_ANNUI[titoloGrado];
+            if (!tabelleGrado) return { errore: 'Tabelle non trovate' };
+
+            let stipendioBase = 0;
+            let rpd = 0;
+            let ivc = 0;
+            let aumentoBiennale = 0;
+            let assegnoAdPersonam = 0; // v6
+            let fasciaStipendiale = '0-8';
+            let fasciaRPD = '0-14';
+            let numBienni = 0;
+
+            if (statoDocente === 'Base' || statoDocente === 'Progressione_Biennale' || statoDocente === 'Ricostruzione_Sospesa') {
+                numBienni = numBienniOverride !== null ? numBienniOverride : Math.floor(anniValidi / 2);
+                fasciaStipendiale = '0-8';
+                fasciaRPD = '0-14'; // RPD base per i bienni
+                stipendioBase = tabelleGrado[fasciaStipendiale];
+                rpd = RPD_ANNUALE[fasciaRPD];
+                ivc = stipendioBase * 0.005; // 0.5% (stima IVC CCNL 2022-24)
+                aumentoBiennale = stipendioBase * 0.025 * numBienni;
+            } 
+            else if (statoDocente === 'Ricostruzione_Attiva') {
+                fasciaStipendiale = getFasciaStipendiale(anniValidi);
+                fasciaRPD = getFasciaRPD(anniValidi);
+                stipendioBase = tabelleGrado[fasciaStipendiale];
+                rpd = RPD_ANNUALE[fasciaRPD];
+                ivc = stipendioBase * 0.005; 
+                aumentoBiennale = 0; // Assorbito
+
+                // --- LOGICA DI CONTROLLO ASSEGNO AD PERSONAM (v6) ---
+                const nuovoTotaleParziale = stipendioBase + rpd + ivc;
+                if (ultimoLordoConosciuto > 0 && nuovoTotaleParziale < ultimoLordoConosciuto) {
+                    assegnoAdPersonam = ultimoLordoConosciuto - nuovoTotaleParziale;
+                }
+                // Se il nuovo stipendio (es. scatto 9-14) è maggiore, l'assegno resta 0 e viene assorbito.
+            }
+
+            const totaleLordo = stipendioBase + rpd + ivc + aumentoBiennale + assegnoAdPersonam;
+
+            return { stipendioBase, rpd, ivc, aumentoBiennale, assegnoAdPersonam, totaleLordo, fasciaStipendiale, fasciaRPD, numBienni };
+        }
+        
+        // Popola il box riepilogo stipendio finale (v6)
+        function _popolaReportFinale(stipendioCalc, statoDocente, anniValidi) {
+            if (!stipendioCalc || stipendioCalc.errore) {
+                stipendioDettaglio.innerHTML = `<p class="text-red-600">${stipendioCalc.errore || 'Errore nel calcolo stipendio.'}</p>`;
+                return;
+            }
+
+            let nota = '';
+            if (statoDocente === 'Base' || statoDocente === 'Progressione_Biennale' || statoDocente === 'Ricostruzione_Sospesa') {
+                 nota = `Calcolo per Aumenti Biennali (N27). Si usa la fascia 0-8 come base. ${stipendioCalc.numBienni} bienni maturati.`;
+            } else if (statoDocente === 'Ricostruzione_Attiva') {
+                 nota = `Calcolo per Ricostruzione Carriera (N05). Anzianità: ${anniValidi.toFixed(2)} anni (Fascia ${stipendioCalc.fasciaStipendiale}).`;
+            }
+
+            stipendioDettaglio.innerHTML = `
+                <div class="stipendio-voce">
+                    <span class="stipendio-label">Stipendio Tabellare (Base)</span>
+                    <span class="stipendio-valore">${formatCurrency(stipendioCalc.stipendioBase)}</span>
+                </div>
+                <div class="stipendio-voce">
+                    <span class="stipendio-label">Retribuzione Professionale Docenti (RPD)</span>
+                    <span class="stipendio-valore">${formatCurrency(stipendioCalc.rpd)}</span>
+                </div>
+                <div class="stipendio-voce">
+                    <span class="stipendio-label">Indennità Vacanza Contrattuale (Stima)</span>
+                    <span class="stipendio-valore">${formatCurrency(stipendioCalc.ivc)}</span>
+                </div>
+                <div class="stipendio-voce">
+                    <span class="stipendio-label">Aumento Biennale (2.5% su tabellare)</span>
+                    <span class="stipendio-valore">${formatCurrency(stipendioCalc.aumentoBiennale)}</span>
+                </div>
+                <!-- v6: Mostra sempre l'assegno calcolato -->
+                <div class="stipendio-voce">
+                    <span class="stipendio-label">Assegno ad Personam Riassorbibile</span>
+                    <span class="stipendio-valore">${formatCurrency(stipendioCalc.assegnoAdPersonam)}</span>
+                </div>
+                <div class="stipendio-totale">
+                    <span class="stipendio-label-totale">Totale Annuo Lordo (Stima)</span>
+                    <span class="stipendio-valore-totale">${formatCurrency(stipendioCalc.totaleLordo)}</span>
+                </div>
+            `;
+            notaCalcolo.textContent = nota;
+        }
+
+        // Popola lo storico degli eventi (v6)
+        function _popolaStoricoEventi(eventi) {
+            if (eventi.length === 0) {
+                storicoRetributivoContainer.innerHTML = '<p class="text-gray-500 text-center">Nessun evento retributivo rilevante ancora maturato.</p>';
+                return;
+            }
+            
+            storicoRetributivoContainer.innerHTML = ''; // Pulisce
+            eventi.forEach(ev => {
+                const card = document.createElement('div');
+                card.className = 'evento-card';
+                card.innerHTML = `
+                    <div class="evento-header">
+                        <span class="evento-titolo">${ev.evento}</span>
+                        <span class="evento-decorrenza">Decorrenza: ${ev.decorrenza}</span>
+                    </div>
+                    <div class="evento-dettaglio">
+                        <div>Tabellare (Fascia ${ev.fasciaStipendiale}): <span>${formatCurrency(ev.stipendioBase)}</span></div>
+                        <div>RPD (Fascia ${ev.fasciaRPD}): <span>${formatCurrency(ev.rpd)}</span></div>
+                        <div>Aumento Biennale (${ev.numBienni}x): <span>${formatCurrency(ev.aumentoBiennale)}</span></div>
+                        <!-- v6: Aggiunta voce assegno -->
+                        <div>Assegno ad Personam: <span>${formatCurrency(ev.assegnoAdPersonam)}</span></div>
+                        <div>IVC (stima): <span>${formatCurrency(ev.ivc)}</span></div>
+                        <div class="mt-1 pt-1 border-t">Totale Annuo Lordo: <span class="text-base font-bold text-indigo-600">${formatCurrency(ev.totaleLordo)}</span></div>
+                    </div>
+                `;
+                storicoRetributivoContainer.appendChild(card);
+            });
+        }
+
+
+        // --- CALCOLO PER DOCENTI DI RUOLO ---
+        calcolaRuoloBtn.addEventListener('click', () => {
+            const immissione = dataImmissioneRuoloSelect.value;
+            const anniPreruolo = parseInt(anniPreruoloInput.value, 10) || 0;
+            const titoloGrado = titoloGradoSelect.value;
+            eventiRetributivi = []; // Resetta
+            
+            let anniValidiTotali = 0;
+            let log = [
+                '<strong>Calcolo per Docente di Ruolo</strong>',
+                'Diritto alla Ricostruzione di Carriera (dopo anno di prova).'
+            ];
+
+            let anniPreruoloRiconosciuti = 0;
+            if (immissione === 'post-2023') {
+                anniPreruoloRiconosciuti = anniPreruolo; // Valutazione integrale
+                log.push(`Normativa D.L. 69/2023 (post 1/9/23): ${anniPreruolo} anni pre-ruolo riconosciuti integralmente.`);
+            } else {
+                // Vecchia normativa (semplificata: 4 interi + 2/3 del resto)
+                const anniOltre4 = Math.max(0, anniPreruolo - 4);
+                anniPreruoloRiconosciuti = 4 + (anniOltre4 * 2 / 3);
+                log.push(`Normativa Pre 2023: ${anniPreruolo} anni pre-ruolo -> ${anniPreruoloRiconosciuti.toFixed(2)} anni riconosciuti (4 + 2/3).`);
+            }
+            
+            // Inquadramento all'anno 1 di ruolo
+            anniValidiTotali = anniPreruoloRiconosciuti + 1; 
+            log.push(`Totale anzianità (incluso 1 anno di ruolo): ${anniValidiTotali.toFixed(2)} anni.`);
+
+            decretoNecessario.textContent = 'Decreto di Ricostruzione di Carriera';
+            dirittoSpettante.textContent = 'Ricostruzione di Carriera (N01)';
+            
+            // Calcolo Stipendio (v6: aggiunto '0' per ultimoLordoConosciuto)
+            const stipendioFinale = _calcolaStipendio('Ricostruzione_Attiva', anniValidiTotali, titoloGrado, 0, 0);
+            _popolaReportFinale(stipendioFinale, 'Ricostruzione_Attiva', anniValidiTotali);
+            
+            // Popola lo storico (solo 1 evento per il ruolo: l'inquadramento)
+            const annoImmissione = new Date().getFullYear(); // Simula l'anno corrente
+             eventiRetributivi.push({ 
+                as: `${annoImmissione-1}/${annoImmissione}`, 
+                decorrenza: `01/09/${annoImmissione-1}`, 
+                evento: `Inquadramento in Ruolo (Anni ${anniValidiTotali.toFixed(2)})`, 
+                ...stipendioFinale 
+            });
+            _popolaStoricoEventi(eventiRetributivi);
+
+            dettaglioPeriodi.innerHTML = log.join('<br>');
+            risultatoContainer.classList.remove('hidden');
+        });
+
+
+        // --- CALCOLO PER DOCENTI INCARICATI ANNUALI ---
+        calcolaIncaricatoBtn.addEventListener('click', () => {
+            if (elencoServizi.length === 0) {
+                alert('Inserire almeno un servizio prima di calcolare.');
+                return;
+            }
+            const titoloGrado = titoloGradoSelect.value;
+            eventiRetributivi = []; // Resetta lo storico
+            
+            // --- 1. FASE DI AGGREGAZIONE ---
+            const anniAggregati = {};
+            for (const servizio of elencoServizi) {
+                const as = servizio.as;
+                if (!anniAggregati[as]) {
+                    anniAggregati[as] = {
+                        as: as,
+                        asStart: servizio.asStart,
+                        totaleOre: 0,
+                        totaleGiorni: 0,
+                        ordini: [],
+                        ragioniStrutturali: false,
+                        isAnnoValido: true 
+                    };
+                }
+                const anno = anniAggregati[as];
+                anno.totaleOre += servizio.ore;
+                anno.totaleGiorni = Math.max(anno.totaleGiorni, servizio.giorni);
+                if (!anno.ordini.includes(servizio.ordineScuola)) {
+                    anno.ordini.push(servizio.ordineScuola);
+                }
+                if (servizio.ragioniStrutturali) {
+                    anno.ragioniStrutturali = true;
+                }
+                if (!isServizioValido(servizio)) {
+                    anno.isAnnoValido = false;
+                }
+            }
+
+            const listaAnniAggregati = Object.values(anniAggregati)
+                                            .sort((a, b) => a.as.localeCompare(b.as));
+
+            // --- 2. FASE DI CALCOLO (STATE MACHINE con Logger v7) ---
+            let totaleAnniValidi = 0;
+            let anniPerBiennio = 0;
+            let statoDocente = 'Base'; 
+            let log = [];
+            let haAvutoBienni = false;
+            let haAvutoRicostruzione = false;
+            let fasciaStipendialePrec = '0-8'; // Per tracciare scatti
+            let ultimoStipendioLordo = 0; // v6: Tracciamento stipendio precedente
+
+            for (const anno of listaAnniAggregati) {
+                const logAnno = `[${anno.as}] - Ore tot: ${anno.totaleOre} (${anno.ordini.join(', ')}) - `;
+                
+                if (!isAnnoValidoPerProgressione(anno)) {
+                    log.push(logAnno + `<span class="text-gray-500">Anno non valido per la progressione (servizio non "Incarico", <180gg, o titoli non idonei).</span>`);
+                    continue;
+                }
+
+                // *** CORREZIONE v7: Memorizza gli anni completati *PRIMA* di incrementare ***
+                const anniValidiCompletati = totaleAnniValidi; 
+                
+                // L'anno è valido
+                totaleAnniValidi++;
+                anniPerBiennio++;
+                const isRequisitoOre = checkRequisitoOreAggregato(anno);
+                const decorrenza = `01/09/${anno.asStart}`;
+
+                if (totaleAnniValidi === 1) {
+                    const stipendioIniziale = _calcolaStipendio('Base', 0, titoloGrado, 0, 0);
+                    eventiRetributivi.push({ ...stipendioIniziale, decorrenza: decorrenza, evento: 'Stipendio Iniziale (Fascia 0-8)' });
+                    ultimoStipendioLordo = stipendioIniziale.totaleLordo; // v6
+                }
+
+                if (statoDocente === 'Ricostruzione_Attiva') {
+                    if (isRequisitoOre) {
+                        log.push(logAnno + `<span class="text-green-700">Progressione carriera (N05) prosegue. Anno totale valido: ${totaleAnniValidi}.</span>`);
+                        // Controlla Scatto di Fascia (v6: passa ultimoLordoConosciuto)
+                        const fasciaAttuale = getFasciaStipendiale(totaleAnniValidi);
+                        if (fasciaAttuale !== fasciaStipendialePrec) {
+                            const stipendioScatto = _calcolaStipendio('Ricostruzione_Attiva', totaleAnniValidi, titoloGrado, 0, ultimoStipendioLordo);
+                            eventiRetributivi.push({ ...stipendioScatto, decorrenza: decorrenza, evento: `Scatto di Fascia Stipendiale (${fasciaAttuale})` });
+                            ultimoStipendioLordo = stipendioScatto.totaleLordo; // v6
+                            fasciaStipendialePrec = fasciaAttuale;
+                        }
+                    } else {
+                        // Evento: Sospensione (v6: aggiorna ultimoLordo)
+                        statoDocente = 'Ricostruzione_Sospesa';
+                        anniPerBiennio = 1; 
+                        log.push(logAnno + `<span class="text-orange-600">Ore insufficienti. Ricostruzione (N05) SOSPESA. Inizia conteggio per aumenti biennali.</span>`);
+                        const numBienniSosp = Math.floor(totaleAnniValidi / 2);
+                        const stipendioSosp = _calcolaStipendio('Ricostruzione_Sospesa', totaleAnniValidi, titoloGrado, numBienniSosp, 0); // L'assegno si azzera tornando a N27
+                        eventiRetributivi.push({ ...stipendioSosp, decorrenza: decorrenza, evento: `Ricostruzione SOSPESA. Ritorno a Bienni (N27)` });
+                        ultimoStipendioLordo = stipendioSosp.totaleLordo; // v6
+                    }
+                } 
+                else { // Se stato è Base, Progressione_Biennale, o Ricostruzione_Sospesa
+                    
+                    // *** CORREZIONE v7: Usa 'anniValidiCompletati' per il check ***
+                    if (anniValidiCompletati >= 4 && isRequisitoOre) {
+                        // Evento: Acquisizione Ricostruzione (N05) (v6: passa ultimoLordo)
+                        haAvutoRicostruzione = true;
+                        statoDocente = 'Ricostruzione_Attiva';
+                        anniPerBiennio = 0; 
+                        log.push(logAnno + `<strong class="text-indigo-600">Anno ${totaleAnniValidi}. Maturato diritto a Ricostruzione (N05). Bienni assorbiti o convertiti in Assegno ad Personam.</strong>`);
+                        const stipendioN05 = _calcolaStipendio('Ricostruzione_Attiva', totaleAnniValidi, titoloGrado, 0, ultimoStipendioLordo);
+                        eventiRetributivi.push({ ...stipendioN05, decorrenza: decorrenza, evento: `Diritto a Ricostruzione (N05) - Anni: ${totaleAnniValidi}` });
+                        ultimoStipendioLordo = stipendioN05.totaleLordo; // v6
+                        fasciaStipendialePrec = getFasciaStipendiale(totaleAnniValidi);
+                    }
+                    else if (anniPerBiennio === 2) {
+                        // Evento: Scatto Biennale (N27) (v6: aggiorna ultimoLordo)
+                        haAvutoBienni = true;
+                        statoDocente = 'Progressione_Biennale';
+                        anniPerBiennio = 0; 
+                        const numBienni = Math.floor(totaleAnniValidi / 2);
+                        log.push(logAnno + `<strong class="text-blue-600">Anno ${totaleAnniValidi}. Maturato ${numBienni}° Aumento Biennale (N27 - 2.5%).</strong>`);
+                        const stipendioN27 = _calcolaStipendio('Progressione_Biennale', totaleAnniValidi, titoloGrado, numBienni, 0);
+                        eventiRetributivi.push({ ...stipendioN27, decorrenza: decorrenza, evento: `Maturato ${numBienni}° Aumento Biennale (N27)` });
+                        ultimoStipendioLordo = stipendioN27.totaleLordo; // v6
+                    }
+                    else {
+                        // Anno di accumulo
+                        let logMsg = `Anno ${totaleAnniValidi} valido per anzianità. `;
+                        if (!isRequisitoOre) { logMsg += `Ore insuff. per ricostruzione. `; }
+                        logMsg += `In attesa requisiti. Conteggio biennio: ${anniPerBiennio}.`;
+                        log.push(logAnno + `<span class="text-gray-700">${logMsg}</span>`);
+                    }
+                }
+            } // Fine ciclo for
+
+            // --- 3. FASE DI REPORTING FINALE ---
+            let esitoDiritto = '';
+            let esitoDecreto = '';
+
+            if (totaleAnniValidi === 0) {
+                 esitoDiritto = 'Nessun servizio valido inserito.';
+                 esitoDecreto = 'Nessun decreto da emettere.';
+            } else if (!haAvutoBienni && !haAvutoRicostruzione && totaleAnniValidi < 2) {
+                esitoDiritto = 'Stipendio iniziale';
+                esitoDecreto = 'Nessun decreto da emettere. Attendere maturazione requisiti.';
+            } else if (!haAvutoBienni && !haAvutoRicostruzione) {
+                esitoDiritto = 'Nessuna progressione ancora maturata';
+                esitoDecreto = 'Nessun decreto da emettere. Attendere maturazione requisiti.';
+            } else if (haAvutoRicostruzione && statoDocente !== 'Ricostruzione_Attiva') { 
+                esitoDiritto = 'Progressione Mista (N05 Sospesa + N27 Attivi)';
+                esitoDecreto = 'Decreto Misto (Sospensione N05 e Attribuzione N27)';
+            } else if (haAvutoRicostruzione && haAvutoBienni) {
+                esitoDiritto = 'Ricostruzione di Carriera (N05)';
+                esitoDecreto = 'Decreto di Ricostruzione Carriera (N05) con riassorbimento bienni';
+            } else if (haAvutoRicostruzione) {
+                esitoDiritto = 'Ricostruzione di Carriera (N05)';
+                esitoDecreto = 'Sviluppare Decreto di Ricostruzione Carriera (N05)';
+            } else if (haAvutoBienni) {
+                esitoDiritto = 'Progressione per Aumenti Biennali (N27)';
+                esitoDecreto = 'Sviluppare Decreto Attribuzione Aumenti Biennali (N27)';
+            }
+
+            dirittoSpettante.textContent = esitoDiritto;
+            decretoNecessario.textContent = esitoDecreto;
+            
+            // Calcolo e Popolamento Stipendio FINALE (passa lo stato e gli anni finali)
+            const numBienniFinale = (statoDocente === 'Base' || statoDocente === 'Progressione_Biennale' || statoDocente === 'Ricostruzione_Sospesa') ? Math.floor(totaleAnniValidi / 2) : 0;
+            const stipendioFinale = _calcolaStipendio(statoDocente, totaleAnniValidi, titoloGrado, numBienniFinale, ultimoStipendioLordo);
+            _popolaReportFinale(stipendioFinale, statoDocente, totaleAnniValidi);
+            
+            // Popolamento Storico Eventi
+            _popolaStoricoEventi(eventiRetributivi);
+            
+            dettaglioPeriodi.innerHTML = log.length > 0 ? log.join('<br>') : 'Nessun anno valido inserito.';
+            risultatoContainer.classList.remove('hidden');
+        });
+
+        // Inizializza l'app
+        popolaAnni();
+        aggiornaPannelli();
+        aggiornaRagioniStrutturali();
+
+    </script>
+</body>
+</html>
