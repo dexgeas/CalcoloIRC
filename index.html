@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CORREZIONE v7: Aggiornato titolo -->
-    <title>Analisi Carriera Docenti Religione (v7 - Correzione N05)</title>
+    <!-- CORREZIONE v8: Aggiornato titolo -->
+    <title>Analisi Carriera Docenti Religione (v8 - Calcolo Finale)</title>
     <!-- Caricamento di Tailwind CSS per lo stile -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -55,24 +55,18 @@
         .stipendio-valore-totale {
             @apply text-xl font-bold text-indigo-700;
         }
-        /* Stili per lo storico eventi (v5) */
+        /* Stili per lo storico eventi (v8 - Semplificato) */
         .evento-card {
-            @apply bg-white p-4 rounded-lg shadow border border-gray-200;
+            @apply bg-white p-3 rounded-lg shadow border border-gray-200;
         }
         .evento-header {
-            @apply flex justify-between items-center mb-2;
+            @apply flex justify-between items-center;
         }
         .evento-titolo {
             @apply text-base font-semibold text-indigo-700;
         }
         .evento-decorrenza {
             @apply text-sm font-bold text-gray-700;
-        }
-        .evento-dettaglio {
-            @apply text-xs text-gray-600 space-y-1;
-        }
-        .evento-dettaglio span {
-            @apply font-medium text-gray-800;
         }
     </style>
 </head>
@@ -82,7 +76,7 @@
         <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl">
 
             <h1 class="text-2xl sm:text-3xl font-bold text-center text-indigo-800 mb-6">
-                Calcolatore Carriera e Retribuzione IdR (v7)
+                Calcolatore Carriera e Retribuzione IdR (v8)
             </h1>
 
             <!-- SEZIONE 1: STATO GIURIDICO -->
@@ -244,19 +238,19 @@
 
                         <!-- Colonna Destra: Calcolo Stipendio FINALE -->
                         <div class="bg-white p-5 rounded-lg shadow">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Stima Retribuzione FINALE</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">Stima Retribuzione FINALE (ad oggi)</h3>
                             <div id="stipendio-dettaglio">
                                 <!-- Voci inserite da JS -->
                             </div>
                         </div>
                     </div>
                     
-                    <!-- v5: Storico Eventi per Decreto -->
+                    <!-- v8: Storico Eventi per Decreto (Solo Giuridico) -->
                     <div class="mt-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Storico Eventi per Decreto</h3>
-                        <div id="storico-retributivo" class="space-y-4 max-h-96 overflow-y-auto bg-white p-4 rounded-lg shadow-inner">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Storico Eventi per Decreto (Analisi Giuridica)</h3>
+                        <div id="storico-retributivo" class="space-y-3 max-h-96 overflow-y-auto bg-white p-4 rounded-lg shadow-inner">
                             <!-- Schede evento inserite da JS -->
-                            <p class="text-gray-500 text-center">Nessun evento retributivo rilevante ancora maturato.</p>
+                            <p class="text-gray-500 text-center">Nessun evento giuridico rilevante ancora maturato.</p>
                         </div>
                     </div>
 
@@ -265,11 +259,10 @@
                          <h3 class="text-lg font-semibold text-gray-900 mb-2">Note sul Calcolo</h3>
                         <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
                             <li id="nota-calcolo"></li>
-                            <!-- v6 -->
+                            <!-- v8: Nota sulla storicizzazione -->
+                            <li><strong>NOTA IMPORTANTE:</strong> Lo storico eventi mostra l'evento *giuridico*. Il calcolo economico (Assegno ad Personam, scatti, ecc.) è sempre basato sulle **tabelle attuali (CCNL 2019-21)** per calcolare lo stipendio *finale*.</li>
                             <li>L'<strong>Assegno ad Personam</strong> viene calcolato automaticamente se lo stipendio N05 è inferiore al N27 precedente, e viene riassorbito al primo scatto di fascia utile.</li>
                             <li>L'<strong>Elemento Perequativo</strong> e l'<strong>Indennità Integrativa Speciale (IIS)</strong> sono già assorbiti nello Stipendio Tabellare (CCNL 2019-2021).</li>
-                            <li>L'<strong>IVC (Indennità Vacanza Contrattuale)</strong> è una stima (0.5% tabellare) in attesa del CCNL 2022-2024 e sarà riassorbita.</li>
-                            <li>Il calcolo si basa sulle tabelle stipendiali e RPD del CCNL 2019-2021 (in vigore). Non include aumenti da CCNL storici.</li>
                         </ul>
                     </div>
 
@@ -517,6 +510,9 @@
             let fasciaStipendiale = '0-8';
             let fasciaRPD = '0-14';
             let numBienni = 0;
+            
+            // Stima IVC (0.5% del tabellare 0-8)
+            const ivcStima = STIPENDI_TABELLARI_ANNUI[titoloGrado]['0-8'] * 0.005;
 
             if (statoDocente === 'Base' || statoDocente === 'Progressione_Biennale' || statoDocente === 'Ricostruzione_Sospesa') {
                 numBienni = numBienniOverride !== null ? numBienniOverride : Math.floor(anniValidi / 2);
@@ -524,7 +520,7 @@
                 fasciaRPD = '0-14'; // RPD base per i bienni
                 stipendioBase = tabelleGrado[fasciaStipendiale];
                 rpd = RPD_ANNUALE[fasciaRPD];
-                ivc = stipendioBase * 0.005; // 0.5% (stima IVC CCNL 2022-24)
+                ivc = ivcStima; 
                 aumentoBiennale = stipendioBase * 0.025 * numBienni;
             } 
             else if (statoDocente === 'Ricostruzione_Attiva') {
@@ -532,15 +528,15 @@
                 fasciaRPD = getFasciaRPD(anniValidi);
                 stipendioBase = tabelleGrado[fasciaStipendiale];
                 rpd = RPD_ANNUALE[fasciaRPD];
-                ivc = stipendioBase * 0.005; 
+                ivc = ivcStima; 
                 aumentoBiennale = 0; // Assorbito
 
                 // --- LOGICA DI CONTROLLO ASSEGNO AD PERSONAM (v6) ---
+                // L'assegno copre la differenza rispetto all'ultimo stipendio noto (che includeva già l'IVC)
                 const nuovoTotaleParziale = stipendioBase + rpd + ivc;
                 if (ultimoLordoConosciuto > 0 && nuovoTotaleParziale < ultimoLordoConosciuto) {
                     assegnoAdPersonam = ultimoLordoConosciuto - nuovoTotaleParziale;
                 }
-                // Se il nuovo stipendio (es. scatto 9-14) è maggiore, l'assegno resta 0 e viene assorbito.
             }
 
             const totaleLordo = stipendioBase + rpd + ivc + aumentoBiennale + assegnoAdPersonam;
@@ -592,10 +588,10 @@
             notaCalcolo.textContent = nota;
         }
 
-        // Popola lo storico degli eventi (v6)
+        // Popola lo storico degli eventi (CORRETTO v8 - Solo giuridico)
         function _popolaStoricoEventi(eventi) {
             if (eventi.length === 0) {
-                storicoRetributivoContainer.innerHTML = '<p class="text-gray-500 text-center">Nessun evento retributivo rilevante ancora maturato.</p>';
+                storicoRetributivoContainer.innerHTML = '<p class="text-gray-500 text-center">Nessun evento giuridico rilevante ancora maturato.</p>';
                 return;
             }
             
@@ -607,15 +603,6 @@
                     <div class="evento-header">
                         <span class="evento-titolo">${ev.evento}</span>
                         <span class="evento-decorrenza">Decorrenza: ${ev.decorrenza}</span>
-                    </div>
-                    <div class="evento-dettaglio">
-                        <div>Tabellare (Fascia ${ev.fasciaStipendiale}): <span>${formatCurrency(ev.stipendioBase)}</span></div>
-                        <div>RPD (Fascia ${ev.fasciaRPD}): <span>${formatCurrency(ev.rpd)}</span></div>
-                        <div>Aumento Biennale (${ev.numBienni}x): <span>${formatCurrency(ev.aumentoBiennale)}</span></div>
-                        <!-- v6: Aggiunta voce assegno -->
-                        <div>Assegno ad Personam: <span>${formatCurrency(ev.assegnoAdPersonam)}</span></div>
-                        <div>IVC (stima): <span>${formatCurrency(ev.ivc)}</span></div>
-                        <div class="mt-1 pt-1 border-t">Totale Annuo Lordo: <span class="text-base font-bold text-indigo-600">${formatCurrency(ev.totaleLordo)}</span></div>
                     </div>
                 `;
                 storicoRetributivoContainer.appendChild(card);
@@ -658,13 +645,11 @@
             const stipendioFinale = _calcolaStipendio('Ricostruzione_Attiva', anniValidiTotali, titoloGrado, 0, 0);
             _popolaReportFinale(stipendioFinale, 'Ricostruzione_Attiva', anniValidiTotali);
             
-            // Popola lo storico (solo 1 evento per il ruolo: l'inquadramento)
+            // Popola lo storico (v8 - solo giuridico)
             const annoImmissione = new Date().getFullYear(); // Simula l'anno corrente
              eventiRetributivi.push({ 
-                as: `${annoImmissione-1}/${annoImmissione}`, 
                 decorrenza: `01/09/${annoImmissione-1}`, 
-                evento: `Inquadramento in Ruolo (Anni ${anniValidiTotali.toFixed(2)})`, 
-                ...stipendioFinale 
+                evento: `Inquadramento in Ruolo (Anni ${anniValidiTotali.toFixed(2)})`
             });
             _popolaStoricoEventi(eventiRetributivi);
 
@@ -714,7 +699,7 @@
             const listaAnniAggregati = Object.values(anniAggregati)
                                             .sort((a, b) => a.as.localeCompare(b.as));
 
-            // --- 2. FASE DI CALCOLO (STATE MACHINE con Logger v7) ---
+            // --- 2. FASE DI CALCOLO (STATE MACHINE con Logger v8) ---
             let totaleAnniValidi = 0;
             let anniPerBiennio = 0;
             let statoDocente = 'Base'; 
@@ -732,7 +717,7 @@
                     continue;
                 }
 
-                // *** CORREZIONE v7: Memorizza gli anni completati *PRIMA* di incrementare ***
+                // *** v7: Memorizza gli anni completati *PRIMA* di incrementare ***
                 const anniValidiCompletati = totaleAnniValidi; 
                 
                 // L'anno è valido
@@ -741,9 +726,10 @@
                 const isRequisitoOre = checkRequisitoOreAggregato(anno);
                 const decorrenza = `01/09/${anno.asStart}`;
 
+                // Calcolo economico solo per tracciare l'ultimo lordo
                 if (totaleAnniValidi === 1) {
                     const stipendioIniziale = _calcolaStipendio('Base', 0, titoloGrado, 0, 0);
-                    eventiRetributivi.push({ ...stipendioIniziale, decorrenza: decorrenza, evento: 'Stipendio Iniziale (Fascia 0-8)' });
+                    eventiRetributivi.push({ decorrenza: decorrenza, evento: 'Stipendio Iniziale (Fascia 0-8)' });
                     ultimoStipendioLordo = stipendioIniziale.totaleLordo; // v6
                 }
 
@@ -754,7 +740,7 @@
                         const fasciaAttuale = getFasciaStipendiale(totaleAnniValidi);
                         if (fasciaAttuale !== fasciaStipendialePrec) {
                             const stipendioScatto = _calcolaStipendio('Ricostruzione_Attiva', totaleAnniValidi, titoloGrado, 0, ultimoStipendioLordo);
-                            eventiRetributivi.push({ ...stipendioScatto, decorrenza: decorrenza, evento: `Scatto di Fascia Stipendiale (${fasciaAttuale})` });
+                            eventiRetributivi.push({ decorrenza: decorrenza, evento: `Scatto di Fascia Stipendiale (${fasciaAttuale})` });
                             ultimoStipendioLordo = stipendioScatto.totaleLordo; // v6
                             fasciaStipendialePrec = fasciaAttuale;
                         }
@@ -765,13 +751,13 @@
                         log.push(logAnno + `<span class="text-orange-600">Ore insufficienti. Ricostruzione (N05) SOSPESA. Inizia conteggio per aumenti biennali.</span>`);
                         const numBienniSosp = Math.floor(totaleAnniValidi / 2);
                         const stipendioSosp = _calcolaStipendio('Ricostruzione_Sospesa', totaleAnniValidi, titoloGrado, numBienniSosp, 0); // L'assegno si azzera tornando a N27
-                        eventiRetributivi.push({ ...stipendioSosp, decorrenza: decorrenza, evento: `Ricostruzione SOSPESA. Ritorno a Bienni (N27)` });
+                        eventiRetributivi.push({ decorrenza: decorrenza, evento: `Ricostruzione SOSPESA. Ritorno a Bienni (N27)` });
                         ultimoStipendioLordo = stipendioSosp.totaleLordo; // v6
                     }
                 } 
                 else { // Se stato è Base, Progressione_Biennale, o Ricostruzione_Sospesa
                     
-                    // *** CORREZIONE v7: Usa 'anniValidiCompletati' per il check ***
+                    // *** v7: Usa 'anniValidiCompletati' per il check ***
                     if (anniValidiCompletati >= 4 && isRequisitoOre) {
                         // Evento: Acquisizione Ricostruzione (N05) (v6: passa ultimoLordo)
                         haAvutoRicostruzione = true;
@@ -779,7 +765,7 @@
                         anniPerBiennio = 0; 
                         log.push(logAnno + `<strong class="text-indigo-600">Anno ${totaleAnniValidi}. Maturato diritto a Ricostruzione (N05). Bienni assorbiti o convertiti in Assegno ad Personam.</strong>`);
                         const stipendioN05 = _calcolaStipendio('Ricostruzione_Attiva', totaleAnniValidi, titoloGrado, 0, ultimoStipendioLordo);
-                        eventiRetributivi.push({ ...stipendioN05, decorrenza: decorrenza, evento: `Diritto a Ricostruzione (N05) - Anni: ${totaleAnniValidi}` });
+                        eventiRetributivi.push({ decorrenza: decorrenza, evento: `Diritto a Ricostruzione (N05) - Anni: ${totaleAnniValidi}` });
                         ultimoStipendioLordo = stipendioN05.totaleLordo; // v6
                         fasciaStipendialePrec = getFasciaStipendiale(totaleAnniValidi);
                     }
@@ -791,7 +777,7 @@
                         const numBienni = Math.floor(totaleAnniValidi / 2);
                         log.push(logAnno + `<strong class="text-blue-600">Anno ${totaleAnniValidi}. Maturato ${numBienni}° Aumento Biennale (N27 - 2.5%).</strong>`);
                         const stipendioN27 = _calcolaStipendio('Progressione_Biennale', totaleAnniValidi, titoloGrado, numBienni, 0);
-                        eventiRetributivi.push({ ...stipendioN27, decorrenza: decorrenza, evento: `Maturato ${numBienni}° Aumento Biennale (N27)` });
+                        eventiRetributivi.push({ decorrenza: decorrenza, evento: `Maturato ${numBienni}° Aumento Biennale (N27)` });
                         ultimoStipendioLordo = stipendioN27.totaleLordo; // v6
                     }
                     else {
@@ -839,7 +825,7 @@
             const stipendioFinale = _calcolaStipendio(statoDocente, totaleAnniValidi, titoloGrado, numBienniFinale, ultimoStipendioLordo);
             _popolaReportFinale(stipendioFinale, statoDocente, totaleAnniValidi);
             
-            // Popolamento Storico Eventi
+            // Popolamento Storico Eventi (v8)
             _popolaStoricoEventi(eventiRetributivi);
             
             dettaglioPeriodi.innerHTML = log.length > 0 ? log.join('<br>') : 'Nessun anno valido inserito.';
